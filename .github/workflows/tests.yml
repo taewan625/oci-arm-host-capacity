@@ -36,11 +36,12 @@ jobs:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-${{ matrix.php-version }}-composer-${{ matrix.dependencies }}-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.php-version }}-composer-${{ matrix.dependencies }}-
+                ${{ runner.os }}-${{ matrix.php-version }}-composer-${{ matrix.dependencies }}-
       - name: Write private key
         run: |
-          echo "${{ secrets.OCI_PRIVATE_KEY }}" > /tmp/private_key.pem
+          printf '%s' "${{ secrets.OCI_PRIVATE_KEY }}" > /tmp/private_key.pem
           chmod 600 /tmp/private_key.pem
+          openssl pkey -in /tmp/private_key.pem -noout && echo "KEY OK" || echo "KEY INVALID"
       - name: Install dependencies
         run: |
           composer update --prefer-dist --no-progress
