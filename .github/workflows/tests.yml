@@ -31,7 +31,16 @@
             chmod 600 /tmp/private_key.pem
 
         - name: Run instance creation
-          run: php index.php
+          id: oci
+          run: |
+            set +e
+            OUTPUT=$(php index.php 2>&1)
+            EXIT_CODE=$?
+            echo "$OUTPUT"
+            if echo "$OUTPUT" | grep -qi "ocid1.instance"; then
+              echo "instance_created=true" >> $GITHUB_OUTPUT
+            fi
+            exit $EXIT_CODE
           env:
             OCI_REGION: ${{ secrets.OCI_REGION }}
             OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
@@ -46,3 +55,17 @@
             OCI_SHAPE: ${{ secrets.OCI_SHAPE }}
             OCI_MAX_INSTANCES: ${{ secrets.OCI_MAX_INSTANCES }}
             OCI_SSH_PUBLIC_KEY: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
+
+        - name: Notify Telegram on instance creation
+          if: steps.oci.outputs.instance_created == 'true'
+          run: |
+            curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+              -d "chat_id=${{ secrets.TELEGRAM_USER_ID }}" \
+              -d "text=🎉 OCI ARM 인스턴스 생성 성공! 콘솔 확인하세요."
+
+        - name: Notify Telegram on workflow failure
+          if: failure()
+          run: |
+            curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+              -d "chat_id=${{ secrets.TELEGRAM_USER_ID }}" \
+              -d "text=⚠️ Workflow 실패: ${{ github.workflow }} - 셋업 확인 필요"
