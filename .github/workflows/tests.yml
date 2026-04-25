@@ -31,7 +31,7 @@
             chmod 600 /tmp/private_key.pem
 
         - name: Run instance creation
-          run: php run.php
+          run: php index.php
           env:
             OCI_REGION: ${{ secrets.OCI_REGION }}
             OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
